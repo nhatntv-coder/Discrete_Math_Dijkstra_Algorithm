@@ -7,6 +7,16 @@ Minh họa cho thuật toán Dijkstra
 
 ---
 
+### Step 0: Tải code
+
+```bash
+git clone https://github.com/zombieTDV/Discrete_Math_Dijkstra_Algorithm.git
+```
+
+```bash
+cd Discrete_Math_Dijkstra_Algorithm
+```
+
 ### Step 1: Tạo môi trường ảo Python
 
 ```bash

@@ -41,10 +41,14 @@ source .venv/bin/activate
 
 ### Step 2: Tải các thư viện cần thiết
 
+```bash
 pip install -r requirements.txt
+```
 
 ---
 
 ### Step 3: Chạy chương trình
 
+```bash
 python src/app.py
+```

@@ -1,7 +1,6 @@
 from flask import Flask, render_template, request, jsonify
 import heapq
 from collections import deque
-import math
 
 app = Flask(__name__)
 
@@ -10,7 +9,7 @@ class Grid:
         self.rows = rows
         self.cols = cols
         self.grid = [[0 for _ in range(cols)] for _ in range(rows)]
-        self.traffic = [[1 for _ in range(cols)] for _ in range(rows)]  # Traffic cost
+        self.traffic = [[1 for _ in range(cols)] for _ in range(rows)]
     
     def is_valid(self, row, col):
         return 0 <= row < self.rows and 0 <= col < self.cols and self.grid[row][col] != 1
@@ -27,7 +26,9 @@ class Grid:
     def get_cost(self, row, col):
         return self.traffic[row][col]
 
-def dijkstra(grid, start, end):
+# --- Core Algorithms ---
+
+def dijkstra_segment(grid, start, end):
     visited = set()
     distances = {start: 0}
     parent = {}
@@ -56,7 +57,7 @@ def dijkstra(grid, start, end):
                     heapq.heappush(pq, (new_dist, neighbor))
     
     path = []
-    if end in parent:
+    if end in parent or start == end: # Handle start==end case or path found
         node = end
         while node != start:
             path.append(node)
@@ -66,7 +67,7 @@ def dijkstra(grid, start, end):
     
     return path, explored_order, distances.get(end, float('inf'))
 
-def bfs(grid, start, end):
+def bfs_segment(grid, start, end):
     visited = set([start])
     queue = deque([(start, [start])])
     explored_order = []
@@ -76,7 +77,6 @@ def bfs(grid, start, end):
         explored_order.append(current)
         
         if current == end:
-            # Calculate actual cost for BFS path
             total_cost = sum(grid.get_cost(node[0], node[1]) for node in path[1:])
             return path, explored_order, total_cost
         
@@ -87,7 +87,7 @@ def bfs(grid, start, end):
     
     return [], explored_order, float('inf')
 
-def dfs(grid, start, end):
+def dfs_segment(grid, start, end):
     visited = set()
     stack = [(start, [start])]
     explored_order = []
@@ -102,7 +102,6 @@ def dfs(grid, start, end):
         explored_order.append(current)
         
         if current == end:
-            # Calculate actual cost for DFS path
             total_cost = sum(grid.get_cost(node[0], node[1]) for node in path[1:])
             return path, explored_order, total_cost
         
@@ -112,18 +111,44 @@ def dfs(grid, start, end):
     
     return [], explored_order, float('inf')
 
+# --- Multi-Point Orchestrator ---
+
+def run_multi_point_path(algo_func, grid, points):
+    """
+    Chains the pathfinding between sequential points: Start -> Stop1 -> Stop2 -> End
+    """
+    full_path = []
+    full_explored = []
+    total_cost = 0
+    
+    # points is [start, stop1, stop2, ..., end]
+    for i in range(len(points) - 1):
+        segment_start = points[i]
+        segment_end = points[i+1]
+        
+        path, explored, cost = algo_func(grid, segment_start, segment_end)
+        
+        if not path:
+            return [], full_explored, float('inf') # Path broken
+        
+        # Avoid duplicating the join node (end of seg 1 is start of seg 2)
+        if i > 0:
+            full_path.extend(path[1:])
+        else:
+            full_path.extend(path)
+            
+        full_explored.extend(explored)
+        total_cost += cost
+
+    return full_path, full_explored, total_cost
+
 @app.route('/')
 def index():
     return render_template('index.html')
 
-@app.route('/run_algorithm', methods=['POST'])
-def run_algorithm():
-    data = request.json
-    algorithm = data['algorithm']
+def prepare_grid(data):
     obstacles = data['obstacles']
     traffic_zones = data.get('traffic', [])
-    start = tuple(data['start'])
-    end = tuple(data['end'])
     
     grid = Grid()
     for obs in obstacles:
@@ -131,15 +156,25 @@ def run_algorithm():
     
     for traffic in traffic_zones:
         grid.traffic[traffic[0]][traffic[1]] = traffic[2]
+    return grid
+
+def get_points_list(data):
+    start = tuple(data['start'])
+    end = tuple(data['end'])
+    stops = [tuple(s) for s in data.get('stops', [])]
+    return [start] + stops + [end]
+
+@app.route('/run_algorithm', methods=['POST'])
+def run_algorithm():
+    data = request.json
+    algorithm = data['algorithm']
+    grid = prepare_grid(data)
+    points = get_points_list(data)
     
-    algorithms = {
-        'dijkstra': dijkstra,
-        'bfs': bfs,
-        'dfs': dfs,
-    }
+    algos = {'dijkstra': dijkstra_segment, 'bfs': bfs_segment, 'dfs': dfs_segment}
     
-    if algorithm in algorithms:
-        path, explored, cost = algorithms[algorithm](grid, start, end)
+    if algorithm in algos:
+        path, explored, cost = run_multi_point_path(algos[algorithm], grid, points)
         return jsonify({
             'path': path,
             'explored': explored,
@@ -152,27 +187,14 @@ def run_algorithm():
 @app.route('/run_all_simultaneous', methods=['POST'])
 def run_all_simultaneous():
     data = request.json
-    obstacles = data['obstacles']
-    traffic_zones = data.get('traffic', [])
-    start = tuple(data['start'])
-    end = tuple(data['end'])
-    
-    grid = Grid()
-    for obs in obstacles:
-        grid.grid[obs[0]][obs[1]] = 1
-    
-    for traffic in traffic_zones:
-        grid.traffic[traffic[0]][traffic[1]] = traffic[2]
+    grid = prepare_grid(data)
+    points = get_points_list(data)
     
     results = {}
-    algorithms = {
-        'dijkstra': dijkstra,
-        'bfs': bfs,
-        'dfs': dfs,
-    }
+    algos = {'dijkstra': dijkstra_segment, 'bfs': bfs_segment, 'dfs': dfs_segment}
     
-    for name, algo in algorithms.items():
-        path, explored, cost = algo(grid, start, end)
+    for name, func in algos.items():
+        path, explored, cost = run_multi_point_path(func, grid, points)
         results[name] = {
             'path': path,
             'explored': explored,
@@ -185,50 +207,8 @@ def run_all_simultaneous():
 
 @app.route('/compare_all', methods=['POST'])
 def compare_all():
-    data = request.json
-    obstacles = data['obstacles']
-    traffic_zones = data.get('traffic', [])
-    start = tuple(data['start'])
-    end = tuple(data['end'])
-    
-    grid = Grid()
-    for obs in obstacles:
-        grid.grid[obs[0]][obs[1]] = 1
-    
-    for traffic in traffic_zones:
-        grid.traffic[traffic[0]][traffic[1]] = traffic[2]
-    
-    results = {}
-    algorithms = {
-        'Dijkstra': dijkstra,
-        'BFS': bfs,
-        'DFS': dfs,
-    }
-    
-    for name, algo in algorithms.items():
-        path, explored, cost = algo(grid, start, end)
-        results[name] = {
-            'path': path,
-            'explored': explored,
-            'cost': cost,
-            'nodes_explored': len(explored),
-            'path_length': len(path)
-        }
-    
-    return jsonify(results)
+    # Reuse the same logic as run_all_simultaneous for comparison data
+    return run_all_simultaneous()
 
 if __name__ == '__main__':
-    print("=" * 60)
-    print("🚀 Pathfinding Algorithm Visualizer")
-    print("=" * 60)
-    print("\nStarting Flask server...")
-    print("Open your browser and go to: http://127.0.0.1:5000")
-    print("\nFeatures:")
-    print("  • Visualize Dijkstra, BFS, DFS, and A* algorithms")
-    print("  • Draw custom obstacles or generate random mazes")
-    print("  • Compare all algorithms side-by-side")
-    print("  • Interactive grid with drag-to-draw")
-    print("\nPress Ctrl+C to stop the server")
-    print("=" * 60)
-    
     app.run(debug=True, port=5000)

@@ -3,13 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pathfinding Algorithm Visualizer</title>
+    <title>Pathfinding Visualizer: Delivery Systems</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        /* [Previous CSS remains the same until .cell styles...] */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -24,329 +21,146 @@
             padding: 30px;
             box-shadow: 0 20px 60px rgba(0,0,0,0.3);
         }
-        h1 {
-            text-align: center;
-            color: #667eea;
-            margin-bottom: 10px;
-            font-size: 2.5em;
-        }
-        .subtitle {
-            text-align: center;
-            color: #666;
-            margin-bottom: 30px;
-        }
+        h1 { text-align: center; color: #667eea; margin-bottom: 10px; font-size: 2.5em; }
+        .subtitle { text-align: center; color: #666; margin-bottom: 30px; }
         .controls {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-            justify-content: center;
-            align-items: center;
+            display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap;
+            justify-content: center; align-items: center;
         }
         button {
-            padding: 12px 24px;
-            border: none;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+            padding: 12px 24px; border: none; border-radius: 8px;
+            font-size: 14px; font-weight: 600; cursor: pointer;
+            transition: all 0.3s; text-transform: uppercase; letter-spacing: 0.5px;
         }
-        .btn-primary {
-            background: #667eea;
-            color: white;
-        }
-        .btn-primary:hover {
-            background: #5568d3;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-        }
-        .btn-secondary {
-            background: #48bb78;
-            color: white;
-        }
-        .btn-secondary:hover {
-            background: #38a169;
-            transform: translateY(-2px);
-        }
-        .btn-danger {
-            background: #f56565;
-            color: white;
-        }
-        .btn-danger:hover {
-            background: #e53e3e;
-        }
-        .btn-warning {
-            background: #ed8936;
-            color: white;
-        }
-        .btn-warning:hover {
-            background: #dd6b20;
-        }
-        select {
-            padding: 12px;
-            border: 2px solid #667eea;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            background: white;
-        }
-        .grid-container {
-            display: flex;
-            justify-content: center;
-            margin-bottom: 20px;
-            overflow-x: auto;
-        }
-        .grid {
-            display: inline-grid;
-            gap: 1px;
-            background: #e2e8f0;
-            padding: 2px;
-            border-radius: 8px;
-        }
+        .btn-primary { background: #667eea; color: white; }
+        .btn-primary:hover { background: #5568d3; transform: translateY(-2px); }
+        .btn-secondary { background: #48bb78; color: white; }
+        .btn-secondary:hover { background: #38a169; transform: translateY(-2px); }
+        .btn-danger { background: #f56565; color: white; }
+        .btn-danger:hover { background: #e53e3e; }
+        .btn-warning { background: #ed8936; color: white; }
+        .btn-warning:hover { background: #dd6b20; }
+        .btn-purple { background: #805ad5; color: white; }
+        .btn-purple:hover { background: #6b46c1; transform: translateY(-2px); }
+        
+        select { padding: 12px; border: 2px solid #667eea; border-radius: 8px; font-size: 14px; }
+        .grid-container { display: flex; justify-content: center; margin-bottom: 20px; overflow-x: auto; }
+        .grid { display: inline-grid; gap: 1px; background: #e2e8f0; padding: 2px; border-radius: 8px; }
+        
         .cell {
-            width: 25px;
-            height: 25px;
-            background: white;
-            cursor: pointer;
-            transition: all 0.2s;
-            border: 1px solid #e2e8f0;
-            position: relative;
+            width: 25px; height: 25px; background: white; cursor: pointer;
+            transition: transform 0.2s; border: 1px solid #e2e8f0;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 12px; font-weight: bold; color: white;
         }
-        .cell:hover {
-            transform: scale(1.1);
+        .cell:hover { transform: scale(1.1); z-index: 10; }
+        
+        .cell.start { background: #48bb78; }
+        .cell.end { background: #f56565; }
+        .cell.obstacle { background: #2d3748; }
+        .cell.traffic { background: #ffa500; opacity: 0.6; }
+        .cell.stop { background: #805ad5; box-shadow: 0 0 5px #805ad5; }
+        
+        /* EXPLORATION ANIMATIONS */
+        .cell.explored-dijkstra { background: #bee3f8; animation: explore 0.3s; }
+        .cell.explored-bfs { background: #c6f6d5; animation: explore 0.3s; }
+        .cell.explored-dfs { background: #feebc8; animation: explore 0.3s; }
+        
+        /* PATH VISUALIZATION - FIXED OVERLAPS */
+        /* Single Paths */
+        .cell.path-dijkstra { background: #4299e1; }
+        .cell.path-bfs { background: #48bb78; }
+        .cell.path-dfs { background: #ed8936; }
+        
+        /* Simultaneous Mode - CSS Gradient Striping */
+        .cell.multi-path-dijkstra {
+            background: #4299e1 !important;
         }
-        .cell.start {
-            background: #48bb78;
-        }
-        .cell.end {
-            background: #f56565;
-        }
-        .cell.obstacle {
-            background: #2d3748;
-        }
-        .cell.traffic {
-            background: #ffa500;
-            opacity: 0.6;
-        }
-        .cell.explored-dijkstra {
-            background: #bee3f8;
-            animation: explore 0.3s;
-        }
-        .cell.explored-bfs {
-            background: #c6f6d5;
-            animation: explore 0.3s;
-        }
-        .cell.explored-dfs {
-            background: #feebc8;
-            animation: explore 0.3s;
-        }
-        .cell.path-dijkstra {
-            background: #4299e1;
-            animation: path 0.5s;
-        }
-        .cell.path-bfs {
-            background: #48bb78;
-            animation: path 0.5s;
-        }
-        .cell.path-dfs {
-            background: #ed8936;
-            animation: path 0.5s;
-        }
-        /* Multi-path overlays */
-        .cell.multi-path {
-            position: relative;
-        }
-        .cell.multi-path::before,
-        .cell.multi-path::after {
-            content: '';
-            position: absolute;
-            width: 100%;
-            height: 33.33%;
-            left: 0;
-        }
-        .cell.has-dijkstra::before {
-            background: #4299e1;
-            top: 0;
-        }
-        .cell.has-bfs {
+        .cell.multi-path-bfs {
             background: #48bb78 !important;
         }
-        .cell.has-bfs.has-dijkstra {
-            background: linear-gradient(180deg, #4299e1 0%, #4299e1 50%, #48bb78 50%, #48bb78 100%) !important;
+        .cell.multi-path-dfs {
+            background: #ed8936 !important;
         }
-        .cell.has-dfs::after {
-            background: #ed8936;
-            bottom: 0;
+        
+        /* Overlap Combinations */
+        .cell.multi-path-dijkstra.multi-path-bfs {
+            background: linear-gradient(135deg, #4299e1 50%, #48bb78 50%) !important;
         }
-        .cell.has-all-paths {
-            background: linear-gradient(180deg, #4299e1 0%, #4299e1 33.33%, #48bb78 33.33%, #48bb78 66.66%, #ed8936 66.66%, #ed8936 100%) !important;
+        .cell.multi-path-dijkstra.multi-path-dfs {
+            background: linear-gradient(135deg, #4299e1 50%, #ed8936 50%) !important;
         }
-        @keyframes explore {
-            from { transform: scale(0.3); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
+        .cell.multi-path-bfs.multi-path-dfs {
+            background: linear-gradient(135deg, #48bb78 50%, #ed8936 50%) !important;
         }
-        @keyframes path {
-            from { transform: scale(0.5); }
-            to { transform: scale(1); }
+        .cell.multi-path-dijkstra.multi-path-bfs.multi-path-dfs {
+            background: linear-gradient(135deg, #4299e1 33%, #48bb78 33%, #48bb78 66%, #ed8936 66%) !important;
         }
-        .legend {
-            display: flex;
-            gap: 20px;
-            justify-content: center;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-        }
-        .legend-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .legend-box {
-            width: 20px;
-            height: 20px;
-            border: 1px solid #cbd5e0;
-            border-radius: 3px;
-        }
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-top: 20px;
-        }
-        .stat-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 20px;
-            border-radius: 10px;
-            text-align: center;
-        }
-        .stat-card.dijkstra-card {
-            background: linear-gradient(135deg, #4299e1 0%, #2b6cb0 100%);
-        }
-        .stat-card.bfs-card {
-            background: linear-gradient(135deg, #48bb78 0%, #2f855a 100%);
-        }
-        .stat-card.dfs-card {
-            background: linear-gradient(135deg, #ed8936 0%, #c05621 100%);
-        }
-        .stat-value {
-            font-size: 2em;
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-        .stat-label {
-            font-size: 0.9em;
-            opacity: 0.9;
-        }
-        .comparison-table {
-            width: 100%;
-            margin-top: 20px;
-            border-collapse: collapse;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        .comparison-table th, .comparison-table td {
-            padding: 15px;
-            text-align: center;
-            border-bottom: 1px solid #e2e8f0;
-        }
-        .comparison-table th {
-            background: #667eea;
-            color: white;
-            font-weight: 600;
-        }
-        .comparison-table tr:hover {
-            background: #f7fafc;
-        }
-        .mode-indicator {
-            display: inline-block;
-            padding: 8px 16px;
-            background: #edf2f7;
-            border-radius: 20px;
-            font-weight: 600;
-            color: #4a5568;
-        }
-        .traffic-controls {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
-        .traffic-cost {
-            padding: 8px 12px;
-            border: 2px solid #ed8936;
-            border-radius: 6px;
-            font-weight: 600;
-        }
+
+        @keyframes explore { from { transform: scale(0.3); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        
+        .legend { display: flex; gap: 20px; justify-content: center; margin-bottom: 20px; flex-wrap: wrap; }
+        .legend-item { display: flex; align-items: center; gap: 8px; }
+        .legend-box { width: 20px; height: 20px; border: 1px solid #cbd5e0; border-radius: 3px; }
+        
+        /* Stats and other containers */
+        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 20px; }
+        .stat-card { padding: 20px; border-radius: 10px; text-align: center; color: white; }
+        .stat-card.dijkstra-card { background: linear-gradient(135deg, #4299e1 0%, #2b6cb0 100%); }
+        .stat-card.bfs-card { background: linear-gradient(135deg, #48bb78 0%, #2f855a 100%); }
+        .stat-card.dfs-card { background: linear-gradient(135deg, #ed8936 0%, #c05621 100%); }
+        .stat-value { font-size: 2em; font-weight: bold; }
+        
+        .comparison-table { width: 100%; margin-top: 20px; border-collapse: collapse; }
+        .comparison-table th, .comparison-table td { padding: 15px; text-align: center; border-bottom: 1px solid #e2e8f0; }
+        .comparison-table th { background: #667eea; color: white; }
+        .mode-indicator { padding: 8px 16px; background: #edf2f7; border-radius: 20px; font-weight: 600; color: #4a5568; }
+        .traffic-controls { display: flex; gap: 10px; align-items: center; }
+        .traffic-cost { padding: 8px 12px; border: 2px solid #ed8936; border-radius: 6px; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🗺️ Pathfinding Algorithm Visualizer</h1>
-        <p class="subtitle">Visualize and compare Dijkstra, BFS, and DFS algorithms with traffic zones</p>
+        <h1>📦 Multi-Point Delivery System</h1>
+        <p class="subtitle">Simulate Delivery Routes with Dijkstra, BFS, and DFS</p>
         
         <div class="legend">
-            <div class="legend-item">
-                <div class="legend-box" style="background: #48bb78;"></div>
-                <span>Start Node</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-box" style="background: #f56565;"></div>
-                <span>End Node</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-box" style="background: #2d3748;"></div>
-                <span>Obstacle</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-box" style="background: #ffa500; opacity: 0.6;"></div>
-                <span>Traffic Jam</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-box" style="background: #4299e1;"></div>
-                <span>Dijkstra Path</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-box" style="background: #48bb78;"></div>
-                <span>BFS Path</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-box" style="background: #ed8936;"></div>
-                <span>DFS Path</span>
-            </div>
+            <div class="legend-item"><div class="legend-box" style="background: #48bb78;"></div><span>Start</span></div>
+            <div class="legend-item"><div class="legend-box" style="background: #805ad5;"></div><span>Stop</span></div>
+            <div class="legend-item"><div class="legend-box" style="background: #f56565;"></div><span>End</span></div>
+            <div class="legend-item"><div class="legend-box" style="background: #2d3748;"></div><span>Wall</span></div>
+            <div class="legend-item"><div class="legend-box" style="background: #ffa500; opacity: 0.6;"></div><span>Traffic ($$)</span></div>
+            <div class="legend-item"><div class="legend-box" style="background: #4299e1;"></div><span>Dijkstra</span></div>
+            <div class="legend-item"><div class="legend-box" style="background: #48bb78;"></div><span>BFS</span></div>
+            <div class="legend-item"><div class="legend-box" style="background: #ed8936;"></div><span>DFS</span></div>
         </div>
 
         <div class="controls">
             <span class="mode-indicator">Mode: <span id="currentMode">Drawing Obstacles</span></span>
             <button class="btn-secondary" onclick="setMode('start')">Set Start</button>
             <button class="btn-danger" onclick="setMode('end')">Set End</button>
-            <button class="btn-primary" onclick="setMode('obstacle')">Draw Obstacles</button>
-            <button class="btn-warning" onclick="setMode('traffic')">Traffic Jam</button>
+            <button class="btn-purple" onclick="setMode('stop')">Add Stop 📦</button>
+            <button class="btn-primary" onclick="setMode('obstacle')">Draw Walls</button>
+            <button class="btn-warning" onclick="setMode('traffic')">Add Traffic</button>
             <div class="traffic-controls" id="trafficControls" style="display: none;">
                 <label>Cost:</label>
-                <input type="number" id="trafficCost" class="traffic-cost" value="5" min="2" max="20">
+                <input type="number" id="trafficCost" class="traffic-cost" value="10" min="2" max="20">
             </div>
         </div>
 
         <div class="controls">
             <select id="algorithmSelect">
                 <option value="dijkstra">Dijkstra's Algorithm</option>
-                <option value="bfs">Breadth-First Search (BFS)</option>
-                <option value="dfs">Depth-First Search (DFS)</option>
+                <option value="bfs">Breadth-First Search</option>
+                <option value="dfs">Depth-First Search</option>
             </select>
-            <button class="btn-primary" onclick="runAlgorithm()">Run Single Algorithm</button>
-            <button class="btn-secondary" onclick="runAllSimultaneous()">Run All Together</button>
-            <button class="btn-secondary" onclick="compareAll()">Compare Stats</button>
-            <button class="btn-danger" onclick="clearGrid()">Clear Grid</button>
-            <button class="btn-primary" onclick="generateMaze()">Generate Maze</button>
+            <button class="btn-primary" onclick="runAlgorithm()">Run One</button>
+            <button class="btn-secondary" onclick="runAllSimultaneous()">Run All & Compare</button>
+            <button class="btn-danger" onclick="clearGrid()">Clear All</button>
+            <button class="btn-primary" onclick="generateMaze()">Maze</button>
         </div>
 
-        <div class="grid-container">
-            <div class="grid" id="grid"></div>
-        </div>
-
+        <div class="grid-container"><div class="grid" id="grid"></div></div>
         <div class="stats" id="stats"></div>
         <div id="comparison"></div>
     </div>
@@ -354,11 +168,11 @@
     <script>
         const ROWS = 20;
         const COLS = 30;
-        let grid = [];
         let start = [5, 5];
         let end = [15, 25];
         let obstacles = [];
         let trafficZones = [];
+        let stops = []; // New: Array to hold delivery stops
         let mode = 'obstacle';
         let isMouseDown = false;
 
@@ -380,14 +194,34 @@
                         }
                     });
                     gridEl.appendChild(cell);
-                    
-                    if (r === start[0] && c === start[1]) {
-                        cell.classList.add('start');
-                    } else if (r === end[0] && c === end[1]) {
-                        cell.classList.add('end');
-                    }
+                    renderCell(cell, r, c);
                 }
             }
+        }
+        
+        // Helper to refresh a specific cell's look
+        function renderCell(cell, r, c) {
+            cell.className = 'cell';
+            cell.innerHTML = ''; // Clear numbers
+            
+            // Check Start/End
+            if (r === start[0] && c === start[1]) return cell.classList.add('start');
+            if (r === end[0] && c === end[1]) return cell.classList.add('end');
+            
+            // Check Stops
+            const stopIdx = stops.findIndex(s => s[0] === r && s[1] === c);
+            if (stopIdx > -1) {
+                cell.classList.add('stop');
+                cell.innerHTML = stopIdx + 1; // Number the stops
+                return;
+            }
+
+            // Check Obstacles/Traffic
+            const isObs = obstacles.some(o => o[0] === r && o[1] === c);
+            if (isObs) return cell.classList.add('obstacle');
+            
+            const isTraffic = trafficZones.some(t => t[0] === r && t[1] === c);
+            if (isTraffic) cell.classList.add('traffic');
         }
 
         document.addEventListener('mousedown', () => isMouseDown = true);
@@ -395,181 +229,134 @@
 
         function setMode(newMode) {
             mode = newMode;
-            const modeText = 
-                newMode === 'start' ? 'Setting Start Node' :
-                newMode === 'end' ? 'Setting End Node' :
-                newMode === 'traffic' ? 'Drawing Traffic Jams' : 'Drawing Obstacles';
-            document.getElementById('currentMode').textContent = modeText;
-            
-            document.getElementById('trafficControls').style.display = 
-                newMode === 'traffic' ? 'flex' : 'none';
+            const labels = {
+                'start': 'Setting Start Node', 'end': 'Setting End Node',
+                'stop': 'Adding Delivery Stops', 'traffic': 'Drawing Traffic',
+                'obstacle': 'Drawing Walls'
+            };
+            document.getElementById('currentMode').textContent = labels[newMode];
+            document.getElementById('trafficControls').style.display = newMode === 'traffic' ? 'flex' : 'none';
         }
 
         function handleCellClick(r, c) {
             const cell = document.querySelector(`[data-row="${r}"][data-col="${c}"]`);
             
+            // Clean up existing logical items at this location
+            if (mode !== 'traffic' && mode !== 'obstacle') {
+                 // If placing a node, remove obstacles/traffic here
+                 removeObstacle(r, c);
+                 removeTraffic(r, c);
+            }
+
             if (mode === 'start') {
-                document.querySelector('.start')?.classList.remove('start');
                 start = [r, c];
-                cell.classList.add('start');
-                cell.classList.remove('obstacle', 'traffic');
-                removeObstacle(r, c);
-                removeTraffic(r, c);
-                setMode('obstacle');
+                // Remove if it was a stop
+                stops = stops.filter(s => s[0] !== r || s[1] !== c);
             } else if (mode === 'end') {
-                document.querySelector('.end')?.classList.remove('end');
                 end = [r, c];
-                cell.classList.add('end');
-                cell.classList.remove('obstacle', 'traffic');
-                removeObstacle(r, c);
-                removeTraffic(r, c);
-                setMode('obstacle');
+                stops = stops.filter(s => s[0] !== r || s[1] !== c);
+            } else if (mode === 'stop') {
+                // Toggle stop
+                const idx = stops.findIndex(s => s[0] === r && s[1] === c);
+                if (idx > -1) stops.splice(idx, 1);
+                else stops.push([r, c]);
+                // Remove start/end if overwriting
+                if (start[0]===r && start[1]===c) start=[-1,-1]; // Valid temporarily
+                if (end[0]===r && end[1]===c) end=[-1,-1];
             } else if (mode === 'obstacle') {
-                if ((r === start[0] && c === start[1]) || (r === end[0] && c === end[1])) {
-                    return;
-                }
-                
-                const obsIndex = obstacles.findIndex(obs => obs[0] === r && obs[1] === c);
-                if (obsIndex > -1) {
-                    obstacles.splice(obsIndex, 1);
-                    cell.classList.remove('obstacle');
-                } else {
+                const idx = obstacles.findIndex(o => o[0] === r && o[1] === c);
+                if (idx > -1) obstacles.splice(idx, 1);
+                else {
                     obstacles.push([r, c]);
-                    cell.classList.add('obstacle');
-                    cell.classList.remove('traffic');
-                    removeTraffic(r, c);
+                    removeTraffic(r, c); // Can't be both
                 }
             } else if (mode === 'traffic') {
-                if ((r === start[0] && c === start[1]) || (r === end[0] && c === end[1])) {
-                    return;
-                }
-                
-                const trafficIndex = trafficZones.findIndex(t => t[0] === r && t[1] === c);
-                const cost = parseInt(document.getElementById('trafficCost').value);
-                
-                if (trafficIndex > -1) {
-                    trafficZones.splice(trafficIndex, 1);
-                    cell.classList.remove('traffic');
-                } else {
+                const idx = trafficZones.findIndex(t => t[0] === r && t[1] === c);
+                if (idx > -1) trafficZones.splice(idx, 1);
+                else {
+                    const cost = parseInt(document.getElementById('trafficCost').value);
                     trafficZones.push([r, c, cost]);
-                    cell.classList.add('traffic');
-                    cell.classList.remove('obstacle');
                     removeObstacle(r, c);
                 }
             }
+            
+            // Re-render entire grid to ensure numbers on stops are correct
+            refreshGridVisuals();
         }
 
         function removeObstacle(r, c) {
-            const obsIndex = obstacles.findIndex(obs => obs[0] === r && obs[1] === c);
-            if (obsIndex > -1) {
-                obstacles.splice(obsIndex, 1);
-            }
+            obstacles = obstacles.filter(o => o[0] !== r || o[1] !== c);
+        }
+        function removeTraffic(r, c) {
+            trafficZones = trafficZones.filter(t => t[0] !== r || t[1] !== c);
         }
 
-        function removeTraffic(r, c) {
-            const trafficIndex = trafficZones.findIndex(t => t[0] === r && t[1] === c);
-            if (trafficIndex > -1) {
-                trafficZones.splice(trafficIndex, 1);
+        function refreshGridVisuals() {
+            for(let r=0; r<ROWS; r++){
+                for(let c=0; c<COLS; c++){
+                    const cell = document.querySelector(`[data-row="${r}"][data-col="${c}"]`);
+                    // strip old classes except basics
+                    cell.className = 'cell'; 
+                    renderCell(cell, r, c);
+                }
             }
         }
 
         function clearGrid() {
-            obstacles = [];
-            trafficZones = [];
-            document.querySelectorAll('.cell').forEach(cell => {
-                cell.className = 'cell';
-                const r = parseInt(cell.dataset.row);
-                const c = parseInt(cell.dataset.col);
-                if (r === start[0] && c === start[1]) {
-                    cell.classList.add('start');
-                } else if (r === end[0] && c === end[1]) {
-                    cell.classList.add('end');
-                }
-            });
+            obstacles = []; trafficZones = []; stops = [];
             document.getElementById('stats').innerHTML = '';
             document.getElementById('comparison').innerHTML = '';
+            refreshGridVisuals();
         }
 
         function generateMaze() {
             clearGrid();
-            // Add obstacles
+            stops = []; // Reset stops for maze
+            // Simple random generation
             for (let r = 0; r < ROWS; r++) {
                 for (let c = 0; c < COLS; c++) {
-                    if ((r === start[0] && c === start[1]) || (r === end[0] && c === end[1])) {
-                        continue;
-                    }
-                    if (Math.random() < 0.2) {
-                        obstacles.push([r, c]);
-                        const cell = document.querySelector(`[data-row="${r}"][data-col="${c}"]`);
-                        cell.classList.add('obstacle');
-                    }
+                    if ((r === start[0] && c === start[1]) || (r === end[0] && c === end[1])) continue;
+                    if (Math.random() < 0.25) obstacles.push([r, c]);
+                    else if (Math.random() < 0.1) trafficZones.push([r, c, Math.floor(Math.random()*10)+5]);
                 }
             }
-            // Add traffic zones
-            for (let i = 0; i < 30; i++) {
-                const r = Math.floor(Math.random() * ROWS);
-                const c = Math.floor(Math.random() * COLS);
-                const cell = document.querySelector(`[data-row="${r}"][data-col="${c}"]`);
-                if (!cell.classList.contains('start') && !cell.classList.contains('end') && 
-                    !cell.classList.contains('obstacle')) {
-                    const cost = Math.floor(Math.random() * 8) + 3;
-                    trafficZones.push([r, c, cost]);
-                    cell.classList.add('traffic');
-                }
-            }
+            refreshGridVisuals();
         }
 
         async function runAlgorithm() {
-            clearExploredAndPath();
+            refreshGridVisuals(); // Clear old paths
             const algorithm = document.getElementById('algorithmSelect').value;
             
             const response = await fetch('/run_algorithm', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ algorithm, obstacles, traffic: trafficZones, start, end })
+                body: JSON.stringify({ algorithm, obstacles, traffic: trafficZones, start, end, stops })
             });
             
             const data = await response.json();
             visualizeSingle(data, algorithm);
         }
 
-        function clearExploredAndPath() {
-            document.querySelectorAll('.cell').forEach(cell => {
-                cell.className = 'cell';
-                const r = parseInt(cell.dataset.row);
-                const c = parseInt(cell.dataset.col);
-                if (r === start[0] && c === start[1]) {
-                    cell.classList.add('start');
-                } else if (r === end[0] && c === end[1]) {
-                    cell.classList.add('end');
-                }
-                if (obstacles.some(obs => obs[0] === r && obs[1] === c)) {
-                    cell.classList.add('obstacle');
-                }
-                if (trafficZones.some(t => t[0] === r && t[1] === c)) {
-                    cell.classList.add('traffic');
-                }
-            });
-        }
-
         async function visualizeSingle(data, algorithm) {
-            for (let i = 0; i < data.explored.length; i++) {
-                await sleep(20);
-                const [r, c] = data.explored[i];
-                if ((r !== start[0] || c !== start[1]) && (r !== end[0] || c !== end[1])) {
+            // Visualize Exploration
+            if (data.explored) {
+                for (let i = 0; i < data.explored.length; i += 5) { // Speed up slightly
+                    const [r, c] = data.explored[i];
                     const cell = document.querySelector(`[data-row="${r}"][data-col="${c}"]`);
-                    if (!cell.classList.contains('obstacle')) {
+                    if (!cell.classList.contains('obstacle') && !cell.classList.contains('start') && !cell.classList.contains('end') && !cell.classList.contains('stop')) {
                         cell.classList.add(`explored-${algorithm}`);
                     }
+                    if (i % 20 === 0) await sleep(10);
                 }
             }
             
-            for (let i = 0; i < data.path.length; i++) {
-                await sleep(50);
-                const [r, c] = data.path[i];
-                if ((r !== start[0] || c !== start[1]) && (r !== end[0] || c !== end[1])) {
+            // Visualize Path
+            if (data.path) {
+                for (const [r, c] of data.path) {
+                    await sleep(30);
                     const cell = document.querySelector(`[data-row="${r}"][data-col="${c}"]`);
                     if (!cell.classList.contains('obstacle')) {
+                        // Don't overwrite start/end/stop colors entirely, just add path class
                         cell.classList.add(`path-${algorithm}`);
                     }
                 }
@@ -584,169 +371,86 @@
             statsDiv.innerHTML = `
                 <div class="stat-card ${algorithm}-card">
                     <div class="stat-value">${algoName}</div>
-                    <div class="stat-label">Algorithm</div>
-                </div>
-                <div class="stat-card ${algorithm}-card">
-                    <div class="stat-value">${data.nodes_explored}</div>
-                    <div class="stat-label">Nodes Explored</div>
-                </div>
-                <div class="stat-card ${algorithm}-card">
-                    <div class="stat-value">${data.path.length || 'No path'}</div>
-                    <div class="stat-label">Path Length</div>
-                </div>
-                <div class="stat-card ${algorithm}-card">
-                    <div class="stat-value">${data.cost === Infinity ? '∞' : data.cost.toFixed(1)}</div>
-                    <div class="stat-label">Total Cost</div>
+                    <div class="stat-label">Total Cost: ${data.cost === Infinity ? '∞' : data.cost}</div>
+                    <div class="stat-label">Path Length: ${data.path.length}</div>
                 </div>
             `;
         }
 
         async function runAllSimultaneous() {
-            clearExploredAndPath();
+            refreshGridVisuals();
             
             const response = await fetch('/run_all_simultaneous', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ obstacles, traffic: trafficZones, start, end })
+                body: JSON.stringify({ obstacles, traffic: trafficZones, start, end, stops })
             });
             
             const results = await response.json();
-            await visualizeAllSimultaneous(results);
-            displayAllStats(results);
+            await visualizeAll(results);
+            displayComparison(results);
         }
 
-        async function visualizeAllSimultaneous(results) {
-            const maxExplored = Math.max(
-                results.dijkstra.explored.length,
-                results.bfs.explored.length,
-                results.dfs.explored.length
-            );
-
-            // Visualize exploration phase
-            for (let i = 0; i < maxExplored; i++) {
-                await sleep(20);
-                
-                ['dijkstra', 'bfs', 'dfs'].forEach(algo => {
-                    if (i < results[algo].explored.length) {
-                        const [r, c] = results[algo].explored[i];
-                        if ((r !== start[0] || c !== start[1]) && (r !== end[0] || c !== end[1])) {
+        async function visualizeAll(results) {
+            const maxExplored = Math.max(results.dijkstra.explored.length, results.bfs.explored.length, results.dfs.explored.length);
+            
+            // 1. Animate Exploration
+            // Group animations in batches for performance
+            for (let i = 0; i < maxExplored; i+=10) { 
+                await sleep(5);
+                for (let k = 0; k < 10 && (i+k) < maxExplored; k++) {
+                    ['dijkstra', 'bfs', 'dfs'].forEach(algo => {
+                        if (i+k < results[algo].explored.length) {
+                            const [r, c] = results[algo].explored[i+k];
                             const cell = document.querySelector(`[data-row="${r}"][data-col="${c}"]`);
-                            if (!cell.classList.contains('obstacle')) {
-                                cell.classList.add(`explored-${algo}`);
-                            }
+                            if (cell && !cell.classList.contains('obstacle')) cell.classList.add(`explored-${algo}`);
                         }
-                    }
-                });
+                    });
+                }
             }
 
-            await sleep(500);
-
-            // Visualize paths with layered effect
-            const maxPath = Math.max(
-                results.dijkstra.path.length,
-                results.bfs.path.length,
-                results.dfs.path.length
-            );
-
+            // 2. Animate Paths (Use new class system)
+            const maxPath = Math.max(results.dijkstra.path.length, results.bfs.path.length, results.dfs.path.length);
             for (let i = 0; i < maxPath; i++) {
-                await sleep(50);
-                
+                await sleep(30);
                 ['dijkstra', 'bfs', 'dfs'].forEach(algo => {
                     if (i < results[algo].path.length) {
                         const [r, c] = results[algo].path[i];
-                        if ((r !== start[0] || c !== start[1]) && (r !== end[0] || c !== end[1])) {
-                            const cell = document.querySelector(`[data-row="${r}"][data-col="${c}"]`);
-                            if (!cell.classList.contains('obstacle')) {
-                                cell.classList.add(`has-${algo}`);
-                                
-                                // Check if multiple algorithms pass through this cell
-                                const hasMultiple = 
-                                    cell.classList.contains('has-dijkstra') ||
-                                    cell.classList.contains('has-bfs') ||
-                                    cell.classList.contains('has-dfs');
-                                
-                                if (hasMultiple) {
-                                    const count = 
-                                        (cell.classList.contains('has-dijkstra') ? 1 : 0) +
-                                        (cell.classList.contains('has-bfs') ? 1 : 0) +
-                                        (cell.classList.contains('has-dfs') ? 1 : 0);
-                                    
-                                    if (count === 3) {
-                                        cell.classList.add('has-all-paths');
-                                    }
-                                }
-                            }
+                        const cell = document.querySelector(`[data-row="${r}"][data-col="${c}"]`);
+                        if (cell && !cell.classList.contains('obstacle')) {
+                            cell.classList.add(`multi-path-${algo}`);
                         }
                     }
                 });
             }
-        }
-
-        function displayAllStats(results) {
-            const statsDiv = document.getElementById('stats');
-            statsDiv.innerHTML = `
-                <div class="stat-card dijkstra-card">
-                    <div class="stat-value">Dijkstra</div>
-                    <div class="stat-label">Nodes: ${results.dijkstra.nodes_explored} | Cost: ${results.dijkstra.cost.toFixed(1)}</div>
-                </div>
-                <div class="stat-card bfs-card">
-                    <div class="stat-value">BFS</div>
-                    <div class="stat-label">Nodes: ${results.bfs.nodes_explored} | Cost: ${results.bfs.cost.toFixed(1)}</div>
-                </div>
-                <div class="stat-card dfs-card">
-                    <div class="stat-value">DFS</div>
-                    <div class="stat-label">Nodes: ${results.dfs.nodes_explored} | Cost: ${results.dfs.cost.toFixed(1)}</div>
-                </div>
-            `;
-        }
-
-        async function compareAll() {
-            clearExploredAndPath();
-            
-            const response = await fetch('/compare_all', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ obstacles, traffic: trafficZones, start, end })
-            });
-            
-            const results = await response.json();
-            displayComparison(results);
         }
 
         function displayComparison(results) {
             const compDiv = document.getElementById('comparison');
-            let html = '<h2 style="text-align: center; margin-top: 30px; color: #667eea;">Algorithm Comparison</h2>';
-            html += '<table class="comparison-table"><thead><tr>';
-            html += '<th>Algorithm</th><th>Nodes Explored</th><th>Path Length</th><th>Total Cost</th><th>Result</th>';
-            html += '</tr></thead><tbody>';
+            const statsDiv = document.getElementById('stats');
+            statsDiv.innerHTML = ''; // Clear single stats
             
-            const colors = {
-                'Dijkstra': '#4299e1',
-                'BFS': '#48bb78',
-                'DFS': '#ed8936'
-            };
+            let html = '<h2 style="text-align: center; margin-top: 30px; color: #667eea;">Comparison Results</h2>';
+            html += '<table class="comparison-table"><thead><tr><th>Algorithm</th><th>Total Cost (Traffic)</th><th>Path Length (Steps)</th></tr></thead><tbody>';
             
-            for (const [name, data] of Object.entries(results)) {
-                const result = data.path.length > 0 ? '✓ Found' : '✗ No Path';
-                const costDisplay = data.cost === Infinity ? '∞' : data.cost.toFixed(1);
-                html += `<tr style="border-left: 4px solid ${colors[name]}">
-                    <td><strong>${name}</strong></td>
-                    <td>${data.nodes_explored}</td>
-                    <td>${data.path_length || 'N/A'}</td>
-                    <td><strong>${costDisplay}</strong></td>
-                    <td>${result}</td>
+            const colors = {'dijkstra': '#4299e1', 'bfs': '#48bb78', 'dfs': '#ed8936'};
+            
+            for (const [algo, data] of Object.entries(results)) {
+                html += `<tr style="border-left: 5px solid ${colors[algo]}">
+                    <td><strong>${algo.toUpperCase()}</strong></td>
+                    <td>${data.cost === Infinity ? 'Failed' : data.cost}</td>
+                    <td>${data.path_length}</td>
                 </tr>`;
             }
-            
             html += '</tbody></table>';
-            html += '<p style="text-align: center; margin-top: 20px; color: #666;"><strong>Note:</strong> Lower cost is better! Dijkstra optimizes for lowest cost, while BFS/DFS find paths without considering traffic costs.</p>';
+            html += `<p style="text-align: center; color: #666; margin-top: 10px;">
+                <em>Notice: With multiple stops and traffic, Dijkstra finds the cheapest route, while BFS just finds the shortest steps regardless of cost.</em>
+            </p>`;
             compDiv.innerHTML = html;
         }
 
-        function sleep(ms) {
-            return new Promise(resolve => setTimeout(resolve, ms));
-        }
-
+        function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
+        
         initGrid();
     </script>
 </body>

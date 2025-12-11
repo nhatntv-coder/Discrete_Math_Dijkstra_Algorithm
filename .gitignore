@@ -1,1 +1,15 @@
-/.venv
+# Ignore Python bytecode
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+
+# Ignore virtual environment
+.venv/
+venv/
+
+# Ignore IDE/editor files (optional but recommended)
+*.swp
+*.swo
+*.idea/
+.vscode/

@@ -52,3 +52,31 @@ pip install -r requirements.txt
 ```bash
 python src/app.py
 ```
+
+## Cấu trúc dự án
+
+```bash
+project/
+│
+├── app.py
+├── requirements.txt
+│
+├── algorithms/
+│   ├── __init__.py
+│   ├── dijkstra.py
+│   ├── bfs.py
+│   ├── dfs.py
+│   └── multipoint.py
+│
+├── grid/
+│   ├── __init__.py
+│   └── grid.py
+│
+├── utils/
+│   ├── __init__.py
+│   ├── parsing.py
+│   └── helpers.py
+│
+└── templates/
+    └── index.html
+```
